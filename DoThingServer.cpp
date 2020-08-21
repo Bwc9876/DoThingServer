@@ -19,10 +19,13 @@ std::string conchartostring(char g[1024]) {
     return out;
 }
 
-void Write(std::string name, int valread, int new_socket) {
+void Write(std::string name, int valread, int new_socket, bool truedelete) {
     std::string fin = "/home/dev/DoThingData/" + name + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
+        if (truedelete) {
+            return;
+        }
     }
 
     ofstream File(fin.c_str());
@@ -73,14 +76,14 @@ std::string Validate(std::string name, std::string token, int sockfd) {
         send(sockfd, "IE", 3, 0);
             return "IE";
     }
-    std::cout << name << std::endl;
-    std::cout << token << std::endl;
     std::string fin = "V/" + name + "/" + token;
     send(sock, fin.c_str(), strlen(fin.c_str()), 0);
     char tm[1024] = { 0 };
     valread = read(sock, tm, 1024);
     
     std::string returnCode = conchartostring(tm);
+
+    close(sock);
 
     if (returnCode == "IU") {
         send(sockfd, "IU", 3, 0);
@@ -95,7 +98,7 @@ std::string Validate(std::string name, std::string token, int sockfd) {
         return "VT";
     }
 
-    return "VT";
+    return "IE";
 }
 
 void Read(std::string name, int valread, int new_socket) {
@@ -105,8 +108,6 @@ void Read(std::string name, int valread, int new_socket) {
     //55 character limit rn
     const char* hello = "END";
     std::string fin = "/home/dev/DoThingData/" + name + ".csv";
-
-    std::cout << fin << std::endl;
 
     std::ifstream File(fin);
 
@@ -119,15 +120,11 @@ void Read(std::string name, int valread, int new_socket) {
     {
         int n = data.length();
 
+        std::cout << data << std::endl;
+
         char tm[1024] = { 0 };
 
-        char char_array[n + 1] = "";
-
-        strcpy(char_array, data.c_str());
-
-        strcat(char_array, "\n");
-
-        send(new_socket, char_array, n, 0);
+        send(new_socket, data.c_str(), n, 0);
 
         while (true) {
             valread = read(new_socket, tm, 1024);
@@ -222,6 +219,7 @@ int main()
         std::string code = Validate(ou[1], ou[2], new_socket);
 
         if (code != "VT"){
+            close(new_socket);
             continue;
         }
 
@@ -236,12 +234,20 @@ int main()
             Read(ou[1], valread, new_socket);
         }
         else if (mode[0] == 'W') {
-            Write(ou[1], valread, new_socket);
+            Write(ou[1], valread, new_socket, false);
+        }
+        else if (mode[0] == 'D') {
+            std::string fin = "/home/dev/DoThingData/" + ou[1] + ".csv";
+            if (file_exists(fin) == true) {
+                std::remove(fin.c_str());
+            }
         }
         else{
             send(new_socket, "Invalid mode!", 14, 0);
             break;
         }
+
+        close(new_socket);
 
         std::cout << "Connection Closed" << std::endl;
     }
