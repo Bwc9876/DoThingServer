@@ -158,8 +158,7 @@ std::string Validate(std::string name, std::string token, int sockfd) {
 
 void AddUser(std::string name) {
     std::string fin = "/home/dev/DoThingData/" + name;
-    fs::path filepath(fin.c_str());
-    fs::create_directory(filepath);
+    fs::create_directory(fin);
 }
 
 void TouchFile(std::string filepath) {
