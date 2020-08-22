@@ -19,13 +19,10 @@ std::string conchartostring(char g[1024]) {
     return out;
 }
 
-void Write(std::string name, std::string group, int valread, int new_socket, bool truedelete) {
+void Write(std::string name, std::string group, int valread, int new_socket) {
     std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
-        if (truedelete) {
-            return;
-        }
     }
 
     ofstream File(fin.c_str());
@@ -157,6 +154,18 @@ std::string Validate(std::string name, std::string token, int sockfd) {
     }
 
     return "IE";
+}
+
+void AddUser(std::string name) {
+    std::string fin = "/home/dev/DoThingData/" + name;
+    fs::path filepath(fin.c_str());
+    fs::create_directory(filepath);
+}
+
+void TouchFile(std::string filepath) {
+    fstream fsy;
+    fsy.open(filepath.c_str(), ios::out);
+    fsy.close();
 }
 
 void Read(std::string name, std::string group, int valread, int new_socket) {
@@ -297,7 +306,7 @@ int main()
             Read(ou[1], ou[2], valread, new_socket);
         }
         else if (mode[0] == 'W') {
-            Write(ou[1], ou[2], valread, new_socket, false);
+            Write(ou[1], ou[2], valread, new_socket);
         }
         else if (mode[0] == 'D') {
             std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
@@ -321,6 +330,9 @@ int main()
             std::string newstr = "/home/dev/DoThingData/" + ou[1] + "/" + string(conf) + ".csv";
             int result = rename(fin.c_str(), newstr.c_str());
             std::cout << result << std::endl;
+        }
+        else if (mode[0] == 'U') {
+            AddUser(ou[1]); 
         }
         else{
             send(new_socket, "Invalid mode!", 14, 0);
