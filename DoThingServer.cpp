@@ -5,7 +5,7 @@
 #define PORT 8080
 
 using namespace std;
-
+namespace fs = std::filesystem;
 bool file_exists(const std::string name) {
     ifstream f(name.c_str());
     return f.good();
@@ -19,8 +19,8 @@ std::string conchartostring(char g[1024]) {
     return out;
 }
 
-void Write(std::string name, int valread, int new_socket, bool truedelete) {
-    std::string fin = "/home/dev/DoThingData/" + name + ".csv";
+void Write(std::string name, std::string group, int valread, int new_socket, bool truedelete) {
+    std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
         if (truedelete) {
@@ -49,6 +49,64 @@ void Write(std::string name, int valread, int new_socket, bool truedelete) {
         }
     }
     File.close();
+}
+
+void tokenize(std::string const& str, const char delim,
+    std::vector<std::string>& out)
+{
+    size_t start;
+    size_t end = 0;
+
+    while ((start = str.find_first_not_of(delim, end)) != std::string::npos)
+    {
+        end = str.find(delim, start);
+        out.push_back(str.substr(start, end - start));
+    }
+}
+
+void GetGroups(std::string name, int sockfd) {
+
+    std::cout << "Started Getting Groups" << std::endl;
+
+    std::string data = "";
+
+
+    const char* hello = "END";
+    std::string fin = "/home/dev/DoThingData/" + name + "/";
+
+    for (auto& p : fs::directory_iterator(fin.c_str()))
+    {
+        std::vector<std::string> out;
+
+        int valread;
+
+        std::string data = p.path().filename();
+
+        std::string delimeter = ".";
+
+        data = data.substr(0, data.find(delimeter));
+
+        int n = data.length();
+
+        std::cout << data << std::endl;
+
+        char tm[1024] = { 0 };
+
+        send(sockfd, data.c_str(), n, 0);
+
+        while (true) {
+            valread = read(sockfd, tm, 1024);
+            if (tm != "") {
+                memset(tm, ' ', 1023);
+                tm[1024] = '\0';
+                break;
+            }
+        }
+
+
+    }
+
+    send(sockfd, hello, strlen(hello), 0);
 }
 
 std::string Validate(std::string name, std::string token, int sockfd) {
@@ -101,13 +159,15 @@ std::string Validate(std::string name, std::string token, int sockfd) {
     return "IE";
 }
 
-void Read(std::string name, int valread, int new_socket) {
+void Read(std::string name, std::string group, int valread, int new_socket) {
 
     std::string data = "";
 
-    //55 character limit rn
+
     const char* hello = "END";
-    std::string fin = "/home/dev/DoThingData/" + name + ".csv";
+    std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
+
+    std::cout << fin << std::endl;
 
     std::ifstream File(fin);
 
@@ -214,9 +274,11 @@ int main()
 
         std::vector<std::string> ou = split(buffer, '/');
 
+        std::cout << buffer << std::endl;
+
         std::string mode = ou[0];
 
-        std::string code = Validate(ou[1], ou[2], new_socket);
+        std::string code = Validate(ou[1], ou[3], new_socket);
 
         if (code != "VT"){
             close(new_socket);
@@ -226,26 +288,46 @@ int main()
         while (true) {
             valread = read(new_socket, conf, 1024);
             if (conf != "") {
+                memset(conf, '\0', 1023);
                 break;
             }
         }
 
         if (mode[0] == 'R') {
-            Read(ou[1], valread, new_socket);
+            Read(ou[1], ou[2], valread, new_socket);
         }
         else if (mode[0] == 'W') {
-            Write(ou[1], valread, new_socket, false);
+            Write(ou[1], ou[2], valread, new_socket, false);
         }
         else if (mode[0] == 'D') {
-            std::string fin = "/home/dev/DoThingData/" + ou[1] + ".csv";
+            std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
             if (file_exists(fin) == true) {
                 std::remove(fin.c_str());
             }
+        }
+        else if (mode[0] == 'G') {
+            GetGroups(ou[1], new_socket);
+        }
+        else if(mode[0] == 'N') {
+            std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
+            send(new_socket, "Same", 5, 0);
+            while (true) {
+                valread = read(new_socket, conf, 1024);
+                if (conf != "") {
+                    break;
+                }
+            }
+            std::cout << conf << std::endl;
+            std::string newstr = "/home/dev/DoThingData/" + ou[1] + "/" + string(conf) + ".csv";
+            int result = rename(fin.c_str(), newstr.c_str());
+            std::cout << result << std::endl;
         }
         else{
             send(new_socket, "Invalid mode!", 14, 0);
             break;
         }
+
+        memset(buffer, '\0', 1023);
 
         close(new_socket);
 
