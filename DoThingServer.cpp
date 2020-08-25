@@ -19,7 +19,21 @@ std::string conchartostring(char g[1024]) {
     return out;
 }
 
-void Write(std::string name, std::string group, int valread, int new_socket) {
+void Send_Data(int socket, std::string message, bool java){
+	std::string to_send;
+	if (java == true){
+		to_send = message + "\r\n";
+	}
+	else{
+		to_send = message;
+	}
+	
+	int n = to_send.length();
+	
+	send(socket, to_send.c_str(), n, 0);
+}
+
+void Write(std::string name, std::string group, int valread, int new_socket, bool java) {
     std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
@@ -40,7 +54,7 @@ void Write(std::string name, std::string group, int valread, int new_socket) {
             }
             else {
                 File << wl << std::endl;
-                send(new_socket, "GO", 3, 0);
+                Send_Data(new_socket, "GO", java);
                 memset(wl, 0, 255);
             }
         }
@@ -61,14 +75,15 @@ void tokenize(std::string const& str, const char delim,
     }
 }
 
-void GetGroups(std::string name, int sockfd) {
+void GetGroups(std::string name, int sockfd, bool java) {
 
     std::cout << "Started Getting Groups" << std::endl;
 
     std::string data = "";
 
 
-    const char* hello = "END";
+    std::string EndCode = "END";
+	
     std::string fin = "/home/dev/DoThingData/" + name + "/";
 
     for (auto& p : fs::directory_iterator(fin.c_str()))
@@ -83,13 +98,11 @@ void GetGroups(std::string name, int sockfd) {
 
         data = data.substr(0, data.find(delimeter));
 
-        int n = data.length();
-
         std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
 
-        send(sockfd, data.c_str(), n, 0);
+        Send_Data(sockfd, data, java);
 
         while (true) {
             valread = read(sockfd, tm, 1024);
@@ -103,16 +116,16 @@ void GetGroups(std::string name, int sockfd) {
 
     }
 
-    send(sockfd, hello, strlen(hello), 0);
+    Send_Data(sockfd, EndCode, java);
 }
 
-std::string Validate(std::string name, std::string token, int sockfd) {
+std::string Validate(std::string name, std::string token, int sockfd, bool java) {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
     char buffer[1024] = { 0 };
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        send(sockfd, "IE", 3, 0);
+        Send_Data(sockfd, "IE", java);
         return "IE";
     }
 
@@ -122,14 +135,14 @@ std::string Validate(std::string name, std::string token, int sockfd) {
     // Convert IPv4 and IPv6 addresses from text to binary form 
     if (inet_pton(AF_INET, "192.168.86.39", &serv_addr.sin_addr) <= 0)
     {
-        send(sockfd, "IE", 3, 0);
-            return "IE";
+        send(sockfd, "IE\r\n", 3, 0);
+        return "IE";
     }
 
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        send(sockfd, "IE", 3, 0);
-            return "IE";
+        send(sockfd, "IE\r\n", 3, 0);
+        return "IE";
     }
     std::string fin = "V/" + name + "/" + token;
     send(sock, fin.c_str(), strlen(fin.c_str()), 0);
@@ -141,18 +154,19 @@ std::string Validate(std::string name, std::string token, int sockfd) {
     close(sock);
 
     if (returnCode == "IU") {
-        send(sockfd, "IU", 3, 0);
+        Send_Data(sockfd, "IU", java);
         return "IU";
     }
     else if (returnCode == "IT") {
-        send(sockfd, "IT", 3, 0);
+        Send_Data(sockfd, "IT", java);
         return "IT";
     }
     else if (returnCode == "VT") {
-        send(sockfd, "VT", 3, 0);
+        Send_Data(sockfd, "VT", java);
         return "VT";
     }
 
+	Send_Data(sockfd, "IE", java);
     return "IE";
 }
 
@@ -167,12 +181,12 @@ void TouchFile(std::string filepath) {
     fsy.close();
 }
 
-void Read(std::string name, std::string group, int valread, int new_socket) {
+void Read(std::string name, std::string group, int valread, int new_socket, bool java) {
 
     std::string data = "";
 
 
-    const char* hello = "END";
+    std::string EndCode = "END";
     std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
 
     std::cout << fin << std::endl;
@@ -180,19 +194,17 @@ void Read(std::string name, std::string group, int valread, int new_socket) {
     std::ifstream File(fin);
 
     if (!File) {
-        send(new_socket, hello, strlen(hello), 0);
+        Send_Data(new_socket, EndCode, java);
         return;
     }
 
     while (getline(File, data))
     {
-        int n = data.length();
 
         std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
-
-        send(new_socket, data.c_str(), n, 0);
+        Send_Data(new_socket, data, java);
 
         while (true) {
             valread = read(new_socket, tm, 1024);
@@ -208,7 +220,7 @@ void Read(std::string name, std::string group, int valread, int new_socket) {
 
     File.close();
 
-    send(new_socket, hello, strlen(hello), 0);
+    Send_Data(new_socket, EndCode, java);
 
 }
 
@@ -234,7 +246,7 @@ std::vector<std::string> split(char p[1024], char s) {
 int main()
 {
 	
-	std::cout << "Server started" << std::endl;
+	std::cout << "Java Friendly Server started" << std::endl;
 
 
     int server_fd, new_socket, valread;
@@ -285,8 +297,25 @@ int main()
         std::cout << buffer << std::endl;
 
         std::string mode = ou[0];
+		
+		
+		bool java;
+		
+		try{
+			if (ou[3] == "JAVA"){
+				java = true;
+			}
+			else{
+				java = false;
+			}
+		}
+		catch(const std::out_of_range& oor){
+			java = false;
+		}
+		
+		
 
-        std::string code = Validate(ou[1], ou[3], new_socket);
+        std::string code = Validate(ou[1], ou[3], new_socket, java);
 
         if (code != "VT"){
             close(new_socket);
@@ -302,10 +331,10 @@ int main()
         }
 
         if (mode[0] == 'R') {
-            Read(ou[1], ou[2], valread, new_socket);
+            Read(ou[1], ou[2], valread, new_socket, java);
         }
         else if (mode[0] == 'W') {
-            Write(ou[1], ou[2], valread, new_socket);
+            Write(ou[1], ou[2], valread, new_socket, java);
         }
         else if (mode[0] == 'D') {
             std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
@@ -314,11 +343,11 @@ int main()
             }
         }
         else if (mode[0] == 'G') {
-            GetGroups(ou[1], new_socket);
+            GetGroups(ou[1], new_socket, java);
         }
         else if(mode[0] == 'N') {
             std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
-            send(new_socket, "Same", 5, 0);
+            Send_Data(new_socket, "Same", java);
             while (true) {
                 valread = read(new_socket, conf, 1024);
                 if (conf != "") {
@@ -334,7 +363,7 @@ int main()
             AddUser(ou[1]); 
         }
         else{
-            send(new_socket, "Invalid mode!", 14, 0);
+            Send_Data(new_socket, "Invalid mode!", java);
             break;
         }
 
