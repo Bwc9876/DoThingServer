@@ -53,7 +53,9 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
                 break;
             }
             else {
-                File << wl << std::endl;
+				std::string to_put = conchartostring(wl);
+                File << to_put << std::endl;
+				std::cout << to_put << std::endl;
                 Send_Data(new_socket, "GO", java);
                 memset(wl, 0, 255);
             }
@@ -77,8 +79,6 @@ void tokenize(std::string const& str, const char delim,
 
 void GetGroups(std::string name, int sockfd, bool java) {
 
-    std::cout << "Started Getting Groups" << std::endl;
-
     std::string data = "";
 
 
@@ -97,8 +97,6 @@ void GetGroups(std::string name, int sockfd, bool java) {
         std::string delimeter = ".";
 
         data = data.substr(0, data.find(delimeter));
-
-        std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
 
@@ -189,8 +187,6 @@ void Read(std::string name, std::string group, int valread, int new_socket, bool
     std::string EndCode = "END";
     std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
 
-    std::cout << fin << std::endl;
-
     std::ifstream File(fin);
 
     if (!File) {
@@ -200,8 +196,6 @@ void Read(std::string name, std::string group, int valread, int new_socket, bool
 
     while (getline(File, data))
     {
-
-        std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
         Send_Data(new_socket, data, java);
@@ -246,7 +240,7 @@ std::vector<std::string> split(char p[1024], char s) {
 int main()
 {
 	
-	std::cout << "Java Friendly Server started" << std::endl;
+	std::cout << "Java Friendly Debugging Server started" << std::endl;
 
 
     int server_fd, new_socket, valread;
@@ -294,16 +288,24 @@ int main()
 
         std::vector<std::string> ou = split(buffer, '/');
 
-        std::cout << buffer << std::endl;
-
         std::string mode = ou[0];
 		
+		std::string needed("JAVA");
 		
 		bool java;
 		
 		try{
-			if (ou[3] == "JAVA"){
-				java = true;
+			if (!ou[4].empty()){
+				
+				std::string javastr = ou[4];
+				javastr.pop_back();
+				if (javastr == needed){
+					java = true;
+				}
+				else{
+					java = false;
+				}
+				
 			}
 			else{
 				java = false;
@@ -312,7 +314,6 @@ int main()
 		catch(const std::out_of_range& oor){
 			java = false;
 		}
-		
 		
 
         std::string code = Validate(ou[1], ou[3], new_socket, java);
@@ -354,10 +355,8 @@ int main()
                     break;
                 }
             }
-            std::cout << conf << std::endl;
             std::string newstr = "/home/dev/DoThingData/" + ou[1] + "/" + string(conf) + ".csv";
             int result = rename(fin.c_str(), newstr.c_str());
-            std::cout << result << std::endl;
         }
         else if (mode[0] == 'U') {
             AddUser(ou[1]); 
