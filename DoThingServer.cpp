@@ -54,6 +54,14 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
             }
             else {
 				std::string to_put = conchartostring(wl);
+				if (java == true)
+				{
+					size_t pos;
+					while ((pos = to_put.find("_")) != std::string::npos)
+					{
+						to_put.replace(pos, 1, " ");
+					}
+				}
                 File << to_put << std::endl;
 				std::cout << to_put << std::endl;
                 Send_Data(new_socket, "GO", java);
@@ -97,6 +105,8 @@ void GetGroups(std::string name, int sockfd, bool java) {
         std::string delimeter = ".";
 
         data = data.substr(0, data.find(delimeter));
+		
+		std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
 
