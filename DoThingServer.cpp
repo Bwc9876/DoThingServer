@@ -58,16 +58,16 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
             else 
 			{
 				std::string to_put(wl);
-				if (java == true)
+				if (java)
 				{
-					size_t pos;
-					while ((pos = to_put.find("_")) != std::string::npos)
-					{
-						to_put.replace(pos, 1, " ");
-					}
+					File << to_put;
+					std::cout << to_put;
 				}
-                File << to_put << std::endl;
-				std::cout << to_put << std::endl;
+				else
+				{
+					File << to_put << std::endl;
+					std::cout << to_put << std::endl;
+				}
                 Send_Data(new_socket, "GO", java);
                 memset(wl, 0, 255);
             }
@@ -455,8 +455,6 @@ int main()
 		
 		std::string needed("JAVA");
 		
-		std::cout << "BEFORE JAVA" << std::endl;
-		
 		bool java;
 		
 		try{
@@ -485,8 +483,6 @@ int main()
 		catch(const std::bad_alloc& ba){
 			java = false;
 		}
-		
-		std::cout << "BEFORE TEST" << std::endl;
 		
 		
 		if (mode[0] == 'A'){
