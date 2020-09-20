@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <bits/stdc++.h>
+#include <sys/stat.h>
 #include <unistd.h> 
 #include <stdio.h> 
 #include <sys/socket.h> 

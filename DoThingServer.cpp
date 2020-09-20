@@ -34,7 +34,7 @@ void Send_Data(int socket, std::string message, bool java){
 }
 
 void Write(std::string name, std::string group, int valread, int new_socket, bool java) {
-    std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
+    std::string fin = "DoThingData/" + name + "/" + group + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
     }
@@ -46,14 +46,18 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
     memset(empt, ' ', 1023);
     empt[1024] = '\0';
 
-    while (true) {
+    while (true) 
+	{
         valread = read(new_socket, wl, 1024);
-        if (wl != "" && wl != empt) {
-            if (conchartostring(wl).find(look) != std::string::npos) {
+        if (wl != "" && wl != empt) 
+		{
+            if (conchartostring(wl).find(look) != std::string::npos) 
+			{
                 break;
             }
-            else {
-				std::string to_put = conchartostring(wl);
+            else 
+			{
+				std::string to_put(wl);
 				if (java == true)
 				{
 					size_t pos;
@@ -92,7 +96,7 @@ void GetGroups(std::string name, int sockfd, bool java) {
 
     std::string EndCode = "END";
 	
-    std::string fin = "/home/dev/DoThingData/" + name + "/";
+    std::string fin = "DoThingData/" + name + "/";
 
     for (auto& p : fs::directory_iterator(fin.c_str()))
     {
@@ -127,7 +131,82 @@ void GetGroups(std::string name, int sockfd, bool java) {
     Send_Data(sockfd, EndCode, java);
 }
 
-std::string Validate(std::string name, std::string token, int sockfd, bool java) {
+void Proxy(std::string command, int sockfd, bool java, std::string auth_ip){
+	
+	int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    char buffer[1024] = { 0 };
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        Send_Data(sockfd, "IE", java);
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(8081);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form 
+    if (inet_pton(AF_INET, auth_ip.c_str(), &serv_addr.sin_addr) <= 0)
+    {
+        Send_Data(sockfd, "IE", java);
+    }
+
+    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        Send_Data(sockfd, "IE", java);
+    }
+	
+    std::string fin = command;
+    send(sock, fin.c_str(), strlen(fin.c_str()), 0);
+    char tm[1024] = { 0 };
+    valread = read(sock, tm, 1024);
+    
+    std::string returnCode(tm);
+
+    close(sock);
+
+	Send_Data(sockfd, returnCode, java);
+}
+
+bool TestAuth(std::string ip){
+	
+	int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    char buffer[1024] = { 0 };
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        return false;
+    }
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(8081);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form 
+    if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0)
+    {
+        return false;
+    }
+
+    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        return false;
+    }
+	
+	send(sock, "T/Hello", 8, 0);
+	char tm[1024] = { 0 };
+    valread = read(sock, tm, 1024);
+	
+	close(sock);
+	
+	std::string result = conchartostring(tm);
+	
+	if (result == "Hello"){
+		return true;
+	}
+	
+	return false;
+}
+
+std::string Validate(std::string name, std::string token, int sockfd, bool java, std::string auth_ip) {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
     char buffer[1024] = { 0 };
@@ -138,20 +217,21 @@ std::string Validate(std::string name, std::string token, int sockfd, bool java)
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8080);
+    serv_addr.sin_port = htons(8081);
 
     // Convert IPv4 and IPv6 addresses from text to binary form 
-    if (inet_pton(AF_INET, "192.168.86.39", &serv_addr.sin_addr) <= 0)
+    if (inet_pton(AF_INET, auth_ip.c_str(), &serv_addr.sin_addr) <= 0)
     {
-        send(sockfd, "IE\r\n", 3, 0);
+        Send_Data(sockfd, "IE", java);
         return "IE";
     }
 
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        send(sockfd, "IE\r\n", 3, 0);
+        Send_Data(sockfd, "IE", java);
         return "IE";
     }
+	
     std::string fin = "V/" + name + "/" + token;
     send(sock, fin.c_str(), strlen(fin.c_str()), 0);
     char tm[1024] = { 0 };
@@ -179,7 +259,7 @@ std::string Validate(std::string name, std::string token, int sockfd, bool java)
 }
 
 void AddUser(std::string name) {
-    std::string fin = "/home/dev/DoThingData/" + name;
+    std::string fin = "DoThingData/" + name;
     fs::create_directory(fin);
 }
 
@@ -195,7 +275,7 @@ void Read(std::string name, std::string group, int valread, int new_socket, bool
 
 
     std::string EndCode = "END";
-    std::string fin = "/home/dev/DoThingData/" + name + "/" + group + ".csv";
+    std::string fin = "DoThingData/" + name + "/" + group + ".csv";
 
     std::ifstream File(fin);
 
@@ -247,10 +327,83 @@ std::vector<std::string> split(char p[1024], char s) {
 }
 
 
+bool DirExists(std::string dirpath){
+	struct stat buffer;
+	return (stat (dirpath.c_str(), &buffer) == 0);
+}
+
+int getIndex(vector<std::string> v, std::string K) 
+{ 
+    auto it = find(v.begin(), v.end(), K); 
+    if (it != v.end()) { 
+        int index = distance(v.begin(), it); 
+        return index;
+    } 
+    else { 
+        return -1;
+    } 
+	
+	return -1;
+} 
+
+
 int main()
 {
 	
-	std::cout << "Java Friendly Debugging Server started" << std::endl;
+	if (!DirExists("DoThingData")){
+		std::cout << "No User Data Directory Found, Creating One" << std::endl;
+		fs::create_directory("DoThingData");
+	}
+	
+	std::string auth_ip;
+	
+	if (!file_exists("Server.config")){
+		//Start First Time setup
+		std::cout << "No config detected, entering first time set-up" << std::endl;
+		std::cout << "First, enter the ip address of the auth server you wish to use" << std::endl;
+		std::cin >> auth_ip;
+		std::cout << "Contacting Auth Server..." << std::endl;
+		bool valid = TestAuth(auth_ip);
+		if (valid){
+			std::cout << "Succesfully validated with auth server" << std::endl;
+			std::cout << "Saving Server Setup Data In Server.config" << std::endl;
+			//Save Data
+			ofstream File("Server.config");
+			File << auth_ip << std::endl;
+			File.close();
+			std::cout << "Save Complete, starting the server" << std::endl;
+		}
+		else{
+			std::cout << "Error, Auth Server didnt respond correctly" << std::endl;
+			return 0;
+		}
+		
+	}
+	else {
+		std::string data = "";
+		std::ifstream File("Server.config");
+		std::vector<std::string> lines;
+		while (getline(File, data))
+		{
+			if (data != "")
+			{
+				lines.push_back(data);
+			}
+		}
+		if (lines.size() != 1)
+		{
+			std::cout << "Error, cant read config file. Delete it if you wish to go through setup again" << std::endl;
+			return 0;
+		}
+		auth_ip = lines[0];
+		if (!TestAuth(auth_ip)){
+			std::cout << "Error, the auth server did not respond on start (start the auth server first!)";
+			return 0;
+		}
+	}
+	
+	
+	std::cout << "DoThing Server started" << std::endl;
 
 
     int server_fd, new_socket, valread;
@@ -302,6 +455,8 @@ int main()
 		
 		std::string needed("JAVA");
 		
+		std::cout << "BEFORE JAVA" << std::endl;
+		
 		bool java;
 		
 		try{
@@ -324,9 +479,49 @@ int main()
 		catch(const std::out_of_range& oor){
 			java = false;
 		}
+		catch(const std::logic_error& le){
+			java = false;
+		}
+		catch(const std::bad_alloc& ba){
+			java = false;
+		}
+		
+		std::cout << "BEFORE TEST" << std::endl;
+		
+		
+		if (mode[0] == 'A'){
+			//FORWARD TO AUTH SERVER
+			std::string proxy_command;
+			for (std::string part : ou){
+				if (getIndex(ou, part) != 0){
+					if (getIndex(ou, part) == 1){
+						proxy_command += part;
+					}
+					else {
+						proxy_command += "/" + part;
+					}
+				}
+			}
+			Proxy(proxy_command, new_socket, java, auth_ip);
+			close(new_socket);
+			std::cout << "Connection Closed" << std::endl;
+			ou.clear();
+			memset(buffer, '\0', 1023);
+			continue;
+		}
+		else if (mode[0] == 'T'){
+			std::string response = "Hello";
+			std::cout << response << std::endl;
+			send(new_socket, response.c_str(), strlen(response.c_str()), 0 );
+			std::cout << "Connection Closed" << std::endl;
+			memset(buffer, '\0', 1023);
+			ou.clear();
+			close(new_socket);
+			continue;
+		}
 		
 
-        std::string code = Validate(ou[1], ou[3], new_socket, java);
+        std::string code = Validate(ou[1], ou[3], new_socket, java, auth_ip);
 
         if (code != "VT"){
             close(new_socket);
@@ -341,6 +536,10 @@ int main()
             }
         }
 
+		if (!DirExists("DoThingData/" + ou[1])){
+			AddUser(ou[1]);
+		}
+
         if (mode[0] == 'R') {
             Read(ou[1], ou[2], valread, new_socket, java);
         }
@@ -348,7 +547,7 @@ int main()
             Write(ou[1], ou[2], valread, new_socket, java);
         }
         else if (mode[0] == 'D') {
-            std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
+            std::string fin = "DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
             if (file_exists(fin) == true) {
                 std::remove(fin.c_str());
             }
@@ -357,7 +556,7 @@ int main()
             GetGroups(ou[1], new_socket, java);
         }
         else if(mode[0] == 'N') {
-            std::string fin = "/home/dev/DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
+            std::string fin = "DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
             Send_Data(new_socket, "Same", java);
             while (true) {
                 valread = read(new_socket, conf, 1024);
@@ -365,20 +564,26 @@ int main()
                     break;
                 }
             }
-            std::string newstr = "/home/dev/DoThingData/" + ou[1] + "/" + string(conf) + ".csv";
+			std::string to_put = string(conf);
+			if (java == true){
+				to_put.pop_back();
+			}
+            std::string newstr = "DoThingData/" + ou[1] + "/" + to_put + ".csv";
             int result = rename(fin.c_str(), newstr.c_str());
-        }
-        else if (mode[0] == 'U') {
-            AddUser(ou[1]); 
         }
         else{
             Send_Data(new_socket, "Invalid mode!", java);
-            break;
+			std::cout << "Connection Closed" << std::endl;
+			memset(buffer, '\0', 1023);
+			close(new_socket);
+            continue;
         }
 
         memset(buffer, '\0', 1023);
 
         close(new_socket);
+		
+		ou.clear();
 
         std::cout << "Connection Closed" << std::endl;
     }
