@@ -11,14 +11,6 @@ bool file_exists(const std::string name) {
     return f.good();
 }
 
-std::string conchartostring(char g[1024]) {
-    std::string out;
-    std::stringstream no;
-    no << g;
-    no >> out;
-    return out;
-}
-
 void Send_Data(int socket, std::string message, bool java){
 	std::string to_send;
 	if (java == true){
@@ -51,7 +43,8 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
         valread = read(new_socket, wl, 1024);
         if (wl != "" && wl != empt) 
 		{
-            if (conchartostring(wl).find(look) != std::string::npos) 
+			std::string data(wl);
+            if (data.find(look) != std::string::npos) 
 			{
                 break;
             }
@@ -60,13 +53,13 @@ void Write(std::string name, std::string group, int valread, int new_socket, boo
 				std::string to_put(wl);
 				if (java)
 				{
-					File << to_put;
-					std::cout << to_put;
+					File << data;
+					std::cout << data;
 				}
 				else
 				{
-					File << to_put << std::endl;
-					std::cout << to_put << std::endl;
+					File << data << std::endl;
+					std::cout << data << std::endl;
 				}
                 Send_Data(new_socket, "GO", java);
                 memset(wl, 0, 255);
@@ -197,7 +190,7 @@ bool TestAuth(std::string ip){
 	
 	close(sock);
 	
-	std::string result = conchartostring(tm);
+	std::string result(tm);
 	
 	if (result == "Hello"){
 		return true;
@@ -237,7 +230,7 @@ std::string Validate(std::string name, std::string token, int sockfd, bool java,
     char tm[1024] = { 0 };
     valread = read(sock, tm, 1024);
     
-    std::string returnCode = conchartostring(tm);
+    std::string returnCode(tm);
 
     close(sock);
 
@@ -345,6 +338,38 @@ int getIndex(vector<std::string> v, std::string K)
 	
 	return -1;
 } 
+
+void DeleteGroup(std::string username, std::string group){
+	std::string fin = "DoThingData/" + username + "/" + group + ".csv";
+	if (file_exists(fin) == true)
+	{
+		std::remove(fin.c_str());
+	}
+}
+
+void NewGroup(int socket, std::string username, std::string group, bool java){
+	char conf[1024] = { 0 };
+	std::string fin = "DoThingData/" + username + "/" + group + ".csv";
+	Send_Data(socket, "Same", java);
+	while (true) {
+		int valread = read(socket, conf, 1024);
+		if (conf != "") {
+			break;
+		}
+	}
+	std::string to_put(conf);
+	if (java == true){
+		to_put.pop_back();
+	}
+	std::string newstr = "DoThingData/" + username + "/" + to_put + ".csv";
+	rename(fin.c_str(), newstr.c_str());
+}
+
+void InvalidMode(int socket, bool java){
+	Send_Data(socket, "Invalid mode!", java);
+	std::cout << "Connection Closed" << std::endl;
+	close(socket);
+}
 
 
 int main()
@@ -536,44 +561,14 @@ int main()
 			AddUser(ou[1]);
 		}
 
-        if (mode[0] == 'R') {
-            Read(ou[1], ou[2], valread, new_socket, java);
-        }
-        else if (mode[0] == 'W') {
-            Write(ou[1], ou[2], valread, new_socket, java);
-        }
-        else if (mode[0] == 'D') {
-            std::string fin = "DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
-            if (file_exists(fin) == true) {
-                std::remove(fin.c_str());
-            }
-        }
-        else if (mode[0] == 'G') {
-            GetGroups(ou[1], new_socket, java);
-        }
-        else if(mode[0] == 'N') {
-            std::string fin = "DoThingData/" + ou[1] + "/" + ou[2] + ".csv";
-            Send_Data(new_socket, "Same", java);
-            while (true) {
-                valread = read(new_socket, conf, 1024);
-                if (conf != "") {
-                    break;
-                }
-            }
-			std::string to_put = string(conf);
-			if (java == true){
-				to_put.pop_back();
-			}
-            std::string newstr = "DoThingData/" + ou[1] + "/" + to_put + ".csv";
-            int result = rename(fin.c_str(), newstr.c_str());
-        }
-        else{
-            Send_Data(new_socket, "Invalid mode!", java);
-			std::cout << "Connection Closed" << std::endl;
-			memset(buffer, '\0', 1023);
-			close(new_socket);
-            continue;
-        }
+		switch(mode[0]){
+			case 'R': Read(ou[1], ou[2], valread, new_socket, java); break;
+			case 'W': Write(ou[1], ou[2], valread, new_socket, java); break;
+			case 'D': DeleteGroup(ou[1], ou[2]); break;
+			case 'G': GetGroups(ou[1], new_socket, java); break;
+			case 'N': NewGroup(new_socket, ou[1], ou[2], java); break;
+			default : InvalidMode(new_socket, java); break;
+		}
 
         memset(buffer, '\0', 1023);
 
