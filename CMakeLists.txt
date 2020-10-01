@@ -9,7 +9,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project ("DoThingServer")
 
+set(SOURCES DoThingServer.cpp DoThingServer.h)
+
 # Add source to this project's executable.
-add_executable (DoThingServer "DoThingServer.cpp" "DoThingServer.h")
+add_executable (DoThingServer "DoThingServer.cpp" "DoThingServer.h" "Connection.cpp" "Connection.h")
 
 # TODO: Add tests and install targets if needed.

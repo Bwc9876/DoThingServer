@@ -3,20 +3,14 @@
 
 #pragma once
 
-#include <bits/stdc++.h>
 #include <sys/stat.h>
-#include <unistd.h> 
-#include <stdio.h> 
 #include <sys/socket.h> 
-#include <stdlib.h>
 #include <arpa/inet.h>
 #include <vector>
-#include <netinet/in.h> 
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string.h>
 #include <filesystem>
+#include "Connection.h"
 
 
 
