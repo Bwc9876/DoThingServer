@@ -1,7 +1,9 @@
-﻿// DoThingServer.h : Include file for standard system include files,
-// or project specific include files.
+﻿#pragma once
 
-#pragma once
+
+//BEGIN INCLUDES
+//-------------------------
+
 
 #include <sys/stat.h>
 #include <sys/socket.h> 
@@ -13,5 +15,5 @@
 #include "Connection.h"
 
 
-
-// TODO: Reference additional headers your program requires here.
+//-------------------------
+//END INCLUDES

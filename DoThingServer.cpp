@@ -1,19 +1,149 @@
-﻿// DoThingServer.cpp : Defines the entry point for the application.
-//
+﻿//DoThingServer
+//bwc9876
+
+
+//BEGIN PRE-PROCCESSORS/NAMESPACES SECTION
+//------------------------------------------------
+
 
 #include "DoThingServer.h"
 #define PORT 8080
 
+
 using namespace std;
 namespace fs = std::filesystem;
+
+
+//------------------------------------------------
+//END PRE-PROCCESSORS/NAMESPACES SECTION
+
+
+//BEGIN MISC. SECTION
+//------------------------------------------------
+
+
+int getIndex(vector<std::string> v, std::string K) { 
+    auto it = find(v.begin(), v.end(), K); 
+	return it != v.end()? distance(v.begin(), it) : -1;
+} 
+
+
+bool JavaCheck(std::vector<std::string> args) {
+	
+	std::string needed("JAVA");
+		
+	bool java;
+		
+	try{
+		if (!args[4].empty()){
+			std::string javastr = args[4];
+			javastr.pop_back();
+			java = javastr == needed;		
+		}
+		else{
+			java = false;
+		}
+	}
+	catch(const std::out_of_range& oor){
+		java = false;
+
+	}
+	catch(const std::logic_error& le){
+		java = false;
+	}
+	catch(const std::bad_alloc& ba){
+		java = false;
+	}
+	
+	return java;	
+}
+
+
+void InvalidMode(std::vector<std::string> args, PartialConnection con) {
+	con.push("Invalid Mode: " + args[0]);
+}
+
+
+void Echo(std::vector<std::string> args, PartialConnection con) {
+	con.push(args[1]);
+}
+
+
+//------------------------------------------------
+//END MISC. SECTION
+
+
+//BEGIN STRING TOOL SECTION
+//------------------------------------------------
+
+
+void tokenize(std::string const& str, const char delim, std::vector<std::string>& argst) {
+    size_t start;
+    size_t end = 0;
+
+    while ((start = str.find_first_not_of(delim, end)) != std::string::npos)
+    {
+        end = str.find(delim, start);
+        argst.push_back(str.substr(start, end - start));
+    }
+}
+
+
+std::vector<std::string> split(std::string in_str, char delimiter) {
+
+	std::vector<std::string> out;
+
+    std::string between;
+	
+	std::stringstream check1(in_str);
+	
+	while(getline(check1, between, delimiter)){
+		out.push_back(between);
+	}
+	
+	return out;
+
+}
+
+
+//------------------------------------------------
+//END STRING TOOLS SECTION
+
+
+//BEGIN FILE TOOLS SECTION
+//------------------------------------------------
+
+
+bool DirExists(std::string dirpath) {
+	struct stat buffer;
+	return stat (dirpath.c_str(), &buffer) == 0;
+}
+
+
+void TouchFile(std::string filepath) {
+    fstream fsy;
+    fsy.open(filepath.c_str(), ios::out);
+    fsy.close();
+}
+
+
 bool file_exists(const std::string name) {
     ifstream f(name.c_str());
     return f.good();
 }
 
-void Write(std::string name, std::string group, PartialConnection con) {
+
+//------------------------------------------------
+//END FILE TOOLS SECTION
+
+
+//BEGIN WRITE SECTION
+//------------------------------------------------
+
+
+void Write(std::vector<std::string> args, PartialConnection con) {
 	
-    std::string fin = "DoThingData/" + name + "/" + group + ".csv";
+    std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
     if (file_exists(fin) == true) {
         std::remove(fin.c_str());
     }
@@ -38,12 +168,10 @@ void Write(std::string name, std::string group, PartialConnection con) {
 			if (con.java)
 			{
 				File << data;
-				std::cout << data;
 			}
 			else
 			{
 				File << data << std::endl;
-				std::cout << data << std::endl;
 			}
             con.push("GO");
         }
@@ -51,26 +179,52 @@ void Write(std::string name, std::string group, PartialConnection con) {
     File.close();
 }
 
-void tokenize(std::string const& str, const char delim,
-    std::vector<std::string>& argst)
-{
-    size_t start;
-    size_t end = 0;
 
-    while ((start = str.find_first_not_of(delim, end)) != std::string::npos)
-    {
-        end = str.find(delim, start);
-        argst.push_back(str.substr(start, end - start));
-    }
+void NewGroup(std::vector<std::string> args, PartialConnection con) {
+	
+	char conf[1024] = { 0 };
+	std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+	con.push("Same");
+	con.WaitUntilRecv();
+	std::string to_put(conf);
+	if (con.java == true){
+		to_put.pop_back();
+	}
+	std::string newstr = "DoThingData/" + args[1] + "/" + to_put + ".csv";
+	rename(fin.c_str(), newstr.c_str());
 }
 
-void GetGroups(std::string name, PartialConnection con) {
+
+void AddUser(std::string name) {
+    std::string fin = "DoThingData/" + name;
+    fs::create_directory(fin);
+}
+
+
+void DeleteGroup(std::vector<std::string> args, PartialConnection con) {
+	std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+	if (file_exists(fin))
+	{
+		std::remove(fin.c_str());
+	}
+}
+
+
+//------------------------------------------------
+//END WRITE SECTION
+
+
+//BEGIN READ SECTION
+//------------------------------------------------
+
+
+void GetGroups(std::vector<std::string> args, PartialConnection con) {
 	
 	std::string data = "";
 
     std::string EndCode = "END";
 	
-    std::string fin = "DoThingData/" + name + "/";
+    std::string fin = "DoThingData/" + args[1] + "/";
 
     for (auto& p : fs::directory_iterator(fin.c_str()))
     {
@@ -81,8 +235,6 @@ void GetGroups(std::string name, PartialConnection con) {
         std::string delimeter = ".";
 
         data = data.substr(0, data.find(delimeter));
-		
-		std::cout << data << std::endl;
 
         char tm[1024] = { 0 };
 
@@ -94,135 +246,14 @@ void GetGroups(std::string name, PartialConnection con) {
     con.push(EndCode);
 }
 
-void Proxy(std::string command, PartialConnection con, std::string auth_ip){
-	
-	int sock = 0, valread;
-    struct sockaddr_in serv_addr;
-    char buffer[1024] = { 0 };
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        con.push("IE");
-    }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8081);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form 
-    if (inet_pton(AF_INET, auth_ip.c_str(), &serv_addr.sin_addr) <= 0)
-    {
-        con.push("IE");
-    }
-
-    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        con.push("IE");
-    }
-	
-    std::string fin = command;
-    send(sock, fin.c_str(), strlen(fin.c_str()), 0);
-    char tm[1024] = { 0 };
-    valread = read(sock, tm, 1024);
-    
-    std::string returnCode(tm);
-
-    close(sock);
-
-	con.push(returnCode);
-}
-
-bool TestAuth(std::string ip){
-	
-	int sock = 0, valread;
-    struct sockaddr_in serv_addr;
-    char buffer[1024] = { 0 };
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        return false;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8081);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form 
-    if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0)
-    {
-        return false;
-    }
-
-    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        return false;
-    }
-	
-	send(sock, "T/Hello", 8, 0);
-	char tm[1024] = { 0 };
-    valread = read(sock, tm, 1024);
-	
-	close(sock);
-	
-	std::string result(tm);
-	
-	if (result == "Hello"){
-		return true;
-	}
-	
-	return false;
-}
-
-std::string Validate(std::string name, std::string token, PartialConnection con, std::string auth_ip) {
-	
-    int sock = 0, valread;
-    struct sockaddr_in serv_addr;
-    char buffer[1024] = { 0 };
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        return "IE";
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8081);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form 
-    if (inet_pton(AF_INET, auth_ip.c_str(), &serv_addr.sin_addr) <= 0)
-    {
-        return "IE";
-    }
-
-    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        return "IE";
-    }
-	
-    std::string fin = "V/" + name + "/" + token;
-    send(sock, fin.c_str(), strlen(fin.c_str()), 0);
-    char tm[1024] = { 0 };
-    valread = read(sock, tm, 1024);
-    
-    std::string returnCode(tm);
-
-    close(sock);
-
-	return returnCode;
-}
-
-void AddUser(std::string name) {
-    std::string fin = "DoThingData/" + name;
-    fs::create_directory(fin);
-}
-
-void TouchFile(std::string filepath) {
-    fstream fsy;
-    fsy.open(filepath.c_str(), ios::out);
-    fsy.close();
-}
-
-void Read(std::string name, std::string group, PartialConnection con) {
+void Read(std::vector<std::string> args, PartialConnection con) {
 
     std::string data = "";
 
 
     std::string EndCode = "END";
-    std::string fin = "DoThingData/" + name + "/" + group + ".csv";
+    std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 
     std::ifstream File(fin);
 
@@ -243,178 +274,118 @@ void Read(std::string name, std::string group, PartialConnection con) {
 
 }
 
-std::vector<std::string> split(std::string in_str, char delimiter) {
 
-	std::vector<std::string> out;
+//------------------------------------------------
+//END READ SECTION
 
-    std::string between;
-	
-	std::stringstream check1(in_str);
-	
-	while(getline(check1, between, delimiter)){
-		out.push_back(between);
-	}
-	
-	return out;
 
+//BEGIN AUTH SECTION
+//------------------------------------------------
+
+void Proxy(std::string command, PartialConnection con, std::string auth_ip) {
+	
+	Connection AuthCon(8081, auth_ip);
+	
+    AuthCon.push(command);
+
+    std::string returnCode = AuthCon.WaitUntilRecv();
+	
+	AuthCon.dc();
+
+	con.push(returnCode);
 }
 
 
-bool DirExists(std::string dirpath){
-	struct stat buffer;
-	return (stat (dirpath.c_str(), &buffer) == 0);
+bool TestAuth(std::string ip) {
+	
+	Connection AuthCon(8081, ip);
+	
+	AuthCon.push("T/Hello");
+	
+	std::string result = AuthCon.WaitUntilRecv();
+	
+	AuthCon.dc();
+	
+	return result == "Hello";
 }
 
-int getIndex(vector<std::string> v, std::string K) { 
-    auto it = find(v.begin(), v.end(), K); 
-    if (it != v.end()) { 
-        int index = distance(v.begin(), it); 
-        return index;
-    } 
-    else { 
-        return -1;
-    } 
-	
-	return -1;
-} 
 
-void DeleteGroup(std::string username, std::string group){
-	std::string fin = "DoThingData/" + username + "/" + group + ".csv";
-	if (file_exists(fin) == true)
-	{
-		std::remove(fin.c_str());
-	}
+std::string Validate(std::string name, std::string token, PartialConnection con, std::string auth_ip) {
+	
+    Connection AuthCon(8081, auth_ip);
+	
+	AuthCon.push("V/" + name + "/" + token);
+    
+    std::string returnCode = AuthCon.WaitUntilRecv();
+	
+	AuthCon.dc();
+
+	return returnCode;
 }
 
-bool JavaCheck(std::vector<std::string> args){
-	
-	std::string needed("JAVA");
-		
-	bool java;
-		
-	try{
-		if (!args[4].empty()){
-				
-			std::string javastr = args[4];
-			javastr.pop_back();
-			if (javastr == needed){
-				java = true;
-				std::cout << "Java Is True" << std::endl;
-			}
-			else{
-				std::cout << "Java Is False, not equal" << std::endl;
-				java = false;
-			}
-				
-		}
-		else{
-			java = false;
-			std::cout << "Java Is False, empty" << std::endl;
+
+void Forward(std::vector<std::string> args, PartialConnection con, std::string auth_ip) {
+	std::string proxy_command;
+	for (std::string part : args){
+		if (getIndex(args, part) != 0){
+			proxy_command += getIndex(args, part) == 1? part : "/" + part;
 		}
 	}
-	catch(const std::out_of_range& oor){
-		java = false;
-		std::cout << "Java Is False, oor" << std::endl;
-	}
-	catch(const std::logic_error& le){
-		java = false;
-		std::cout << "Java Is False, le" << std::endl;
-	}
-	catch(const std::bad_alloc& ba){
-		java = false;
-		std::cout << "Java Is False, ba" << std::endl;
-	}
-	
-	return java;	
+	Proxy(proxy_command, con, auth_ip);
 }
 
-void NewGroup(std::string username, std::string group, PartialConnection con){
+
+void IfValid(std::vector<std::string> args, PartialConnection con, std::string auth_ip, void (*f)(std::vector<std::string>, PartialConnection)) {
 	
-	char conf[1024] = { 0 };
-	std::string fin = "DoThingData/" + username + "/" + group + ".csv";
-	con.push("Same");
-	con.WaitUntilRecv();
-	std::string to_put(conf);
-	if (con.java == true){
-		to_put.pop_back();
-	}
-	std::string newstr = "DoThingData/" + username + "/" + to_put + ".csv";
-	rename(fin.c_str(), newstr.c_str());
-}
-
-void InvalidMode(PartialConnection con){
-	con.push("Invalid Mode!");
-}
-
-void ConLoop(PartialConnection con, std::string extra_string)
-{
+	std::string returnCode = Validate(args[1], args[3], con, auth_ip);
 	
-        std::string input = con.recieve();
-
-		std::cout << "AH" << std::endl;
-
-        const std::vector<std::string> args = split(input, '/');
-		
-		std::cout << input << std::endl;
-
-        const char mode = args[0][0];
-		
-		con.java = JavaCheck(args);
-		
-		std::cout << con.java << std::endl;
-		
-		if (mode == 'A'){
-			//FORWARD TO AUTH SERVER
-			std::string proxy_command;
-			for (std::string part : args){
-				if (getIndex(args, part) != 0){
-					if (getIndex(args, part) == 1){
-						proxy_command += part;
-					}
-					else {
-						proxy_command += "/" + part;
-					}
-				}
-			}
-			Proxy(proxy_command, con, extra_string);
-			return;
-		}
-		else if (mode == 'T'){
-			std::string response = "Hello";
-			std::cout << response << std::endl;
-			con.push(response);
-			return;
-		}
-		
-
-        std::string code = Validate(args[1], args[3], con, extra_string);
-		
-		con.push(code);
-
-        if (code != "VT"){return;}
-
-        con.WaitUntilRecv();
+	con.push(returnCode);
+	
+	if (returnCode == "VT")
+	{	
 
 		if (!DirExists("DoThingData/" + args[1])){
 			AddUser(args[1]);
 		}
-
-		switch(mode){
-			case 'R': Read(args[1], args[2], con); break;
-			case 'W': Write(args[1], args[2], con); break;
-			case 'D': DeleteGroup(args[1], args[2]); break;
-			case 'G': GetGroups(args[1], con); break;
-			case 'N': NewGroup(args[1], args[2], con); break;
-			default : InvalidMode(con); break;
-		}
 		
+		con.WaitUntilRecv();
+		(*f)(args, con);
+	}
 }
 
 
-int main(){
+//------------------------------------------------
+//END AUTH SECTION
+
+
+//BEGIN MAIN SECTION
+//------------------------------------------------
+
+
+void ConLoop(PartialConnection con, std::string auth_ip) {
+        std::string input = con.recieve();
+        const std::vector<std::string> args = split(input, '/');
+        const char mode = args[0][0];
+		con.java = JavaCheck(args);
+		
+		
+		switch(mode){
+			case 'R': IfValid(args, con, auth_ip, Read); break;
+			case 'W': IfValid(args, con, auth_ip, Write); break;
+			case 'D': IfValid(args, con, auth_ip, DeleteGroup); break;
+			case 'G': IfValid(args, con, auth_ip, GetGroups); break;
+			case 'N': IfValid(args, con, auth_ip, NewGroup); break;
+			case 'A': Forward(args, con, auth_ip); break;
+			case 'T': Echo(args, con); break;
+			default : InvalidMode(args, con); break;
+		}
+}
+
+
+int main() {
 	
 	if (!DirExists("DoThingData")){
-		std::cout << "No User Data Directory Fargsnd, Creating One" << std::endl;
+		std::cout << "No User Data Directory Found, Creating One" << std::endl;
 		fs::create_directory("DoThingData");
 	}
 	
@@ -423,7 +394,7 @@ int main(){
 	if (!file_exists("Server.config")){
 		//Start First Time setup
 		std::cout << "No config detected, entering first time set-up" << std::endl;
-		std::cout << "First, enter the ip address of the auth server yargs wish to use" << std::endl;
+		std::cout << "Enter the ip address of the auth server you wish to use" << std::endl;
 		std::cin >> auth_ip;
 		std::cout << "Contacting Auth Server..." << std::endl;
 		bool valid = TestAuth(auth_ip);
@@ -455,7 +426,7 @@ int main(){
 		}
 		if (lines.size() != 1)
 		{
-			std::cout << "Error, cant read config file. Delete it if yargs wish to go thrargsgh setup again" << std::endl;
+			std::cout << "Error, cant read config file. Delete it if you wish to go through setup again" << std::endl;
 			return 0;
 		}
 		auth_ip = lines[0];
@@ -466,7 +437,15 @@ int main(){
 	}
 	
 	HostConnection hostCon(8080);
-	hostCon.MainLoop(ConLoop, auth_ip);
+	hostCon.MainLoop(ConLoop, auth_ip, true);
 	
 	return 0;
 }
+
+
+//------------------------------------------------
+//END MAIN SECTION
+
+
+
+

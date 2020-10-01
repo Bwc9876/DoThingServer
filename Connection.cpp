@@ -1,66 +1,38 @@
 
+
+//BEGIN PRE-PROCCESSORS/NAMESPACES SECTION
+//------------------------------------------------
+
+
 #include "Connection.h"
+
 
 using namespace std;
 
-	void HostConnection::MainLoop( void (*f)(PartialConnection, std::string), std::string extra)
-	{
-		int con_sock;
-		
+
+//------------------------------------------------
+//END PRE-PROCCESSORS/NAMESPACES SECTION
+
+
+//BEGIN HOSTCONNECTION SECTION
+//---------------------------------------
+
+
+	void HostConnection::MainLoop( void (*f)(PartialConnection, std::string), std::string extra, bool LogConnects){
+		int con_sock;	
 		while ( (con_sock = accept(server_fd, (struct sockaddr*)&address,(socklen_t*)&addrlen)) ){
-			
-			// fcntl(con_sock, F_SETFL, O_NONBLOCK);
-			
 			char str[INET_ADDRSTRLEN];
 			std::string client_address = std::string(inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN));
-			std::cout << "Connection from: " << client_address << std::endl;
+			if (LogConnects){std::cout << "Connection from: " << client_address << std::endl;}
 			PartialConnection con(con_sock, client_address);
 			(*f)(con, extra);
 			close(con_sock);
-			std::cout << "Connection to: " << client_address << " Closed" << std::endl;
+			if (LogConnects){std::cout << "Connection to: " << client_address << " Closed" << std::endl;}
 		}
 	}
 	
-	std::string PartialConnection::recieve(){
-		int valread = read(socket, buffer, 1024);
-		std::string data(buffer);
-		memset(buffer, '\0', 1023);
-		return data;
-	}
 	
-	std::string PartialConnection::WaitUntilRecv(){
-		std::string data;
-		while (true)
-		{
-            data = recieve();
-            if (data != "") 
-			{
-                break;
-            }
-        }
-		return data;
-	}
-	
-	void PartialConnection::push(std::string message)
-	{
-		std::string to_send;
-		if (java == true)
-		{
-			to_send = message + "\r\n";
-		}
-		else
-		{
-			to_send = message;
-		}
-		
-		int n = to_send.length();
-		
-		send(socket, to_send.c_str(), n, 0);
-	}
-	
-	HostConnection::HostConnection(int port)
-	{
-
+	HostConnection::HostConnection(int port){
 		if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 		{
 			perror("socket failed");
@@ -89,10 +61,114 @@ using namespace std;
 			perror("listen");
 			exit(EXIT_FAILURE);
 		}
-		
 	}
 	
-	PartialConnection::PartialConnection(int sock, std::string ip){
-		socket = sock;
+	
+//---------------------------------------
+//END HOSTCONNECTION SECTION
+
+
+//START PARTIALCONNECTION SECTION
+//---------------------------------------
+
+
+	std::string PartialConnection::recieve(){
+		int valread = read(sock, buffer, 1024);
+		std::string data(buffer);
+		memset(buffer, '\0', 1023);
+		return data;
+	}
+	
+	
+	std::string PartialConnection::WaitUntilRecv(){
+		std::string data;
+		while (true)
+		{
+            data = recieve();
+            if (data != "") 
+			{
+                break;
+            }
+        }
+		return data;
+	}
+	
+	
+	void PartialConnection::push(std::string message){
+		std::string to_send = java? message + "\r\n": message;
+		send(sock, to_send.c_str(), to_send.length(), 0);
+	}
+	
+	
+	PartialConnection::PartialConnection(int sock_in, std::string ip){
+		sock = sock_in;
 		client_address = ip;
 	}
+	
+
+//--------------------------------------
+//END PARTIALCONNECTION SECTION
+
+
+//BEGIN CONNECTION SECTION
+//--------------------------------------
+
+
+	Connection::Connection(int port, std::string ip){
+		
+		struct sockaddr_in serv_addr;
+		
+		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		{
+			std::cout << "Error Connecting" << std::endl;
+		}
+
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(port);
+
+		if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0)
+		{
+			std::cout << "Error Connecting" << std::endl;
+		}
+
+		if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+		{
+			std::cout << "Error Connecting" << std::endl;
+		}
+		
+	}	
+	
+	std::string Connection::recieve(){
+		int valread = read(sock, buffer, 1024);
+		std::string data(buffer);
+		memset(buffer, '\0', 1023);
+		return data;
+	}
+	
+	
+	std::string Connection::WaitUntilRecv(){
+		std::string data;
+		while (true)
+		{
+            data = recieve();
+            if (data != "") 
+			{
+                break;
+            }
+        }
+		return data;
+	}
+	
+	
+	void Connection::push(std::string message){
+		std::string to_send = java? message + "\r\n": message;
+		send(sock, to_send.c_str(), to_send.length(), 0);
+	}
+	
+	void Connection::dc(){
+		close(sock);
+	}
+	
+	
+//----------------------------------
+//END CONNECTION SECTION
