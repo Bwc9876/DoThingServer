@@ -143,17 +143,13 @@ bool file_exists(const std::string name) {
 
 void Write(std::vector<std::string> args, PartialConnection con) {
 	
-    std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
-    if (file_exists(fin) == true) {
-        std::remove(fin.c_str());
+    std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+    if (file_exists(path) == true) {
+        std::remove(path.c_str());
     }
 
-    ofstream File(fin.c_str());
+    ofstream File(path.c_str());
     std::string look = "END";
-    char wl[1024] = { 0 };
-    char empt[1024] = { 0 };
-    memset(empt, ' ', 1023);
-    empt[1024] = '\0';
 
     while (true) 
 	{
@@ -164,7 +160,6 @@ void Write(std::vector<std::string> args, PartialConnection con) {
         }
         else 
 		{
-			std::string to_put(wl);
 			if (con.java)
 			{
 				File << data;
@@ -183,29 +178,29 @@ void Write(std::vector<std::string> args, PartialConnection con) {
 void NewGroup(std::vector<std::string> args, PartialConnection con) {
 	
 	char conf[1024] = { 0 };
-	std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+	std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 	con.push("Same");
 	con.WaitUntilRecv();
 	std::string to_put(conf);
 	if (con.java == true){
 		to_put.pop_back();
 	}
-	std::string newstr = "DoThingData/" + args[1] + "/" + to_put + ".csv";
-	rename(fin.c_str(), newstr.c_str());
+	std::string newpath = "DoThingData/" + args[1] + "/" + to_put + ".csv";
+	rename(path.c_str(), newpath.c_str());
 }
 
 
 void AddUser(std::string name) {
-    std::string fin = "DoThingData/" + name;
-    fs::create_directory(fin);
+    std::string path = "DoThingData/" + name;
+    fs::create_directory(path);
 }
 
 
 void DeleteGroup(std::vector<std::string> args, PartialConnection con) {
-	std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
-	if (file_exists(fin))
+	std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+	if (file_exists(path))
 	{
-		std::remove(fin.c_str());
+		std::remove(path.c_str());
 	}
 }
 
@@ -224,9 +219,9 @@ void GetGroups(std::vector<std::string> args, PartialConnection con) {
 
     std::string EndCode = "END";
 	
-    std::string fin = "DoThingData/" + args[1] + "/";
+    std::string path = "DoThingData/" + args[1] + "/";
 
-    for (auto& p : fs::directory_iterator(fin.c_str()))
+    for (auto& p : fs::directory_iterator(path.c_str()))
     {
         std::vector<std::string> argst;
 
@@ -253,9 +248,9 @@ void Read(std::vector<std::string> args, PartialConnection con) {
 
 
     std::string EndCode = "END";
-    std::string fin = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
+    std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 
-    std::ifstream File(fin);
+    std::ifstream File(path);
 
     if (!File) {
         con.push("END");
