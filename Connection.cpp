@@ -18,13 +18,13 @@ using namespace std;
 //---------------------------------------
 
 
-	void HostConnection::MainLoop( void (*f)(PartialConnection, std::string), std::string extra, bool LogConnects){
+	void HostConnection::MainLoop( void (*f)(Connection, std::string), std::string extra, bool LogConnects){
 		int con_sock;	
 		while ( (con_sock = accept(server_fd, (struct sockaddr*)&address,(socklen_t*)&addrlen)) ){
 			char str[INET_ADDRSTRLEN];
 			std::string client_address = std::string(inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN));
 			if (LogConnects){std::cout << "Connection from: " << client_address << std::endl;}
-			PartialConnection con(con_sock, client_address);
+			Connection con(con_sock);
 			(*f)(con, extra);
 			close(con_sock);
 			if (LogConnects){std::cout << "Connection to: " << client_address << " Closed" << std::endl;}
@@ -68,48 +68,6 @@ using namespace std;
 //END HOSTCONNECTION SECTION
 
 
-//START PARTIALCONNECTION SECTION
-//---------------------------------------
-
-
-	std::string PartialConnection::recieve(){
-		int valread = read(sock, buffer, 1024);
-		std::string data(buffer);
-		memset(buffer, '\0', 1023);
-		return data;
-	}
-	
-	
-	std::string PartialConnection::WaitUntilRecv(){
-		std::string data;
-		while (true)
-		{
-            data = recieve();
-            if (data != "") 
-			{
-                break;
-            }
-        }
-		return data;
-	}
-	
-	
-	void PartialConnection::push(std::string message){
-		std::string to_send = java? message + "\r\n": message;
-		send(sock, to_send.c_str(), to_send.length(), 0);
-	}
-	
-	
-	PartialConnection::PartialConnection(int sock_in, std::string ip){
-		sock = sock_in;
-		client_address = ip;
-	}
-	
-
-//--------------------------------------
-//END PARTIALCONNECTION SECTION
-
-
 //BEGIN CONNECTION SECTION
 //--------------------------------------
 
@@ -137,6 +95,12 @@ using namespace std;
 		}
 		
 	}	
+	 
+	Connection::Connection(int socket){
+		
+		sock = socket;
+		
+	}
 	
 	std::string Connection::recieve(){
 		int valread = read(sock, buffer, 1024);

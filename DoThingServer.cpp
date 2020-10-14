@@ -59,12 +59,12 @@ bool JavaCheck(std::vector<std::string> args) {
 }
 
 
-void InvalidMode(std::vector<std::string> args, PartialConnection con) {
+void InvalidMode(std::vector<std::string> args, Connection con) {
 	con.push("Invalid Mode: " + args[0]);
 }
 
 
-void Echo(std::vector<std::string> args, PartialConnection con) {
+void Echo(std::vector<std::string> args, Connection con) {
 	con.push(args[1]);
 }
 
@@ -141,7 +141,7 @@ bool file_exists(const std::string name) {
 //------------------------------------------------
 
 
-void Write(std::vector<std::string> args, PartialConnection con) {
+void Write(std::vector<std::string> args, Connection con) {
 	
     std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
     if (file_exists(path) == true) {
@@ -175,7 +175,7 @@ void Write(std::vector<std::string> args, PartialConnection con) {
 }
 
 
-void NewGroup(std::vector<std::string> args, PartialConnection con) {
+void NewGroup(std::vector<std::string> args, Connection con) {
 	
 	char conf[1024] = { 0 };
 	std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
@@ -196,7 +196,7 @@ void AddUser(std::string name) {
 }
 
 
-void DeleteGroup(std::vector<std::string> args, PartialConnection con) {
+void DeleteGroup(std::vector<std::string> args, Connection con) {
 	std::string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 	if (file_exists(path))
 	{
@@ -213,7 +213,7 @@ void DeleteGroup(std::vector<std::string> args, PartialConnection con) {
 //------------------------------------------------
 
 
-void GetGroups(std::vector<std::string> args, PartialConnection con) {
+void GetGroups(std::vector<std::string> args, Connection con) {
 	
 	std::string data = "";
 
@@ -242,7 +242,7 @@ void GetGroups(std::vector<std::string> args, PartialConnection con) {
 }
 
 
-void Read(std::vector<std::string> args, PartialConnection con) {
+void Read(std::vector<std::string> args, Connection con) {
 
     std::string data = "";
 
@@ -277,7 +277,7 @@ void Read(std::vector<std::string> args, PartialConnection con) {
 //BEGIN AUTH SECTION
 //------------------------------------------------
 
-void Proxy(std::string command, PartialConnection con, std::string auth_ip) {
+void Proxy(std::string command, Connection con, std::string auth_ip) {
 	
 	Connection AuthCon(8081, auth_ip);
 	
@@ -305,7 +305,7 @@ bool TestAuth(std::string ip) {
 }
 
 
-std::string Validate(std::string name, std::string token, PartialConnection con, std::string auth_ip) {
+std::string Validate(std::string name, std::string token, Connection con, std::string auth_ip) {
 	
     Connection AuthCon(8081, auth_ip);
 	
@@ -319,7 +319,7 @@ std::string Validate(std::string name, std::string token, PartialConnection con,
 }
 
 
-void Forward(std::vector<std::string> args, PartialConnection con, std::string auth_ip) {
+void Forward(std::vector<std::string> args, Connection con, std::string auth_ip) {
 	std::string proxy_command;
 	for (std::string part : args){
 		if (getIndex(args, part) != 0){
@@ -330,7 +330,7 @@ void Forward(std::vector<std::string> args, PartialConnection con, std::string a
 }
 
 
-void IfValid(std::vector<std::string> args, PartialConnection con, std::string auth_ip, void (*f)(std::vector<std::string>, PartialConnection)) {
+void IfValid(std::vector<std::string> args, Connection con, std::string auth_ip, void (*f)(std::vector<std::string>, Connection)) {
 	
 	std::string returnCode = Validate(args[1], args[3], con, auth_ip);
 	
@@ -357,7 +357,7 @@ void IfValid(std::vector<std::string> args, PartialConnection con, std::string a
 //------------------------------------------------
 
 
-void ConLoop(PartialConnection con, std::string auth_ip) {
+void ConLoop(Connection con, std::string auth_ip) {
         std::string input = con.recieve();
         const std::vector<std::string> args = split(input, '/');
         const char mode = args[0][0];
@@ -430,6 +430,8 @@ int main() {
 			return 0;
 		}
 	}
+	
+	std::cout << "DoThing Server Started" << std::endl;
 	
 	HostConnection hostCon(8080);
 	hostCon.MainLoop(ConLoop, auth_ip, true);

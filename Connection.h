@@ -18,21 +18,22 @@
 
 //BEGIN CLASSES SECTION
 //--------------------------------
-
-
-class PartialConnection{
 	
+	
+class Connection{
+
 	private:
 		int sock;
 	
 	public:
-		
-		std::string client_address;
+	
 		void push(std::string);
 		std::string recieve();
 		std::string WaitUntilRecv();
-		PartialConnection(int, std::string);
-		bool java;
+		void dc();
+		Connection(int, std::string);
+		Connection(int);
+		bool java = false;
 		char buffer[1024] = { 0 };
 		
 };
@@ -49,26 +50,8 @@ class HostConnection{
 		
 	public:
 	
-		void MainLoop(void (*f)(PartialConnection, std::string), std::string, bool);
+		void MainLoop(void (*f)(Connection, std::string), std::string, bool);
 		HostConnection(int);	
-};
-	
-	
-class Connection{
-
-	private:
-		int sock;
-	
-	public:
-	
-		void push(std::string);
-		std::string recieve();
-		std::string WaitUntilRecv();
-		void dc();
-		Connection(int, std::string);
-		bool java = false;
-		char buffer[1024] = { 0 };
-		
 };
 
 
