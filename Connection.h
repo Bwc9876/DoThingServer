@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+using namespace std;
+
 
 //--------------------------------
 //END INCLUDES
@@ -27,11 +29,11 @@ class Connection{
 	
 	public:
 	
-		void push(std::string);
-		std::string recieve();
-		std::string WaitUntilRecv();
+		void push(string);
+		string recieve();
+		string WaitUntilRecv();
 		void dc();
-		Connection(int, std::string);
+		Connection(int, string);
 		Connection(int);
 		bool java = false;
 		char buffer[1024] = { 0 };
@@ -50,7 +52,7 @@ class HostConnection{
 		
 	public:
 	
-		void MainLoop(void (*f)(Connection, std::string), std::string, bool);
+		void MainLoop(void (*f)(Connection, string), string, bool);
 		HostConnection(int);	
 };
 

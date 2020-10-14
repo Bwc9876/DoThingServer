@@ -18,16 +18,16 @@ using namespace std;
 //---------------------------------------
 
 
-	void HostConnection::MainLoop( void (*f)(Connection, std::string), std::string extra, bool LogConnects){
+	void HostConnection::MainLoop( void (*f)(Connection, string), string extra, bool LogConnects){
 		int con_sock;	
 		while ( (con_sock = accept(server_fd, (struct sockaddr*)&address,(socklen_t*)&addrlen)) ){
 			char str[INET_ADDRSTRLEN];
-			std::string client_address = std::string(inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN));
-			if (LogConnects){std::cout << "Connection from: " << client_address << std::endl;}
+			string client_address = string(inet_ntop(AF_INET, &(address.sin_addr), str, INET_ADDRSTRLEN));
+			if (LogConnects){cout << "Connection from: " << client_address << endl;}
 			Connection con(con_sock);
 			(*f)(con, extra);
 			close(con_sock);
-			if (LogConnects){std::cout << "Connection to: " << client_address << " Closed" << std::endl;}
+			if (LogConnects){cout << "Connection to: " << client_address << " Closed" << endl;}
 		}
 	}
 	
@@ -72,13 +72,13 @@ using namespace std;
 //--------------------------------------
 
 
-	Connection::Connection(int port, std::string ip){
+	Connection::Connection(int port, string ip){
 		
 		struct sockaddr_in serv_addr;
 		
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		{
-			std::cout << "Error Connecting" << std::endl;
+			cout << "Error Connecting" << endl;
 		}
 
 		serv_addr.sin_family = AF_INET;
@@ -86,12 +86,12 @@ using namespace std;
 
 		if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0)
 		{
-			std::cout << "Error Connecting" << std::endl;
+			cout << "Error Connecting" << endl;
 		}
 
 		if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
 		{
-			std::cout << "Error Connecting" << std::endl;
+			cout << "Error Connecting" << endl;
 		}
 		
 	}	
@@ -102,16 +102,16 @@ using namespace std;
 		
 	}
 	
-	std::string Connection::recieve(){
+	string Connection::recieve(){
 		int valread = read(sock, buffer, 1024);
-		std::string data(buffer);
+		string data(buffer);
 		memset(buffer, '\0', 1023);
 		return data;
 	}
 	
 	
-	std::string Connection::WaitUntilRecv(){
-		std::string data;
+	string Connection::WaitUntilRecv(){
+		string data;
 		while (true)
 		{
             data = recieve();
@@ -124,8 +124,8 @@ using namespace std;
 	}
 	
 	
-	void Connection::push(std::string message){
-		std::string to_send = java? message + "\r\n": message;
+	void Connection::push(string message){
+		string to_send = java? message + "\r\n": message;
 		send(sock, to_send.c_str(), to_send.length(), 0);
 	}
 	
