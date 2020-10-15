@@ -28,7 +28,7 @@ int getIndex(vector<string> v, string K) {
 } 
 
 
-bool JavaCheck(std::vector<string> args) {
+bool JavaCheck(vector<string> args) {
 	
 	string needed("JAVA");
 		
@@ -44,13 +44,13 @@ bool JavaCheck(std::vector<string> args) {
 			java = false;
 		}
 	}
-	catch(const std::out_of_range& oor){
+	catch(const out_of_range& oor){
 		java = false;
 	}
-	catch(const std::logic_error& le){
+	catch(const logic_error& le){
 		java = false;
 	}
-	catch(const std::bad_alloc& ba){
+	catch(const bad_alloc& ba){
 		java = false;
 	}
 	
@@ -58,12 +58,12 @@ bool JavaCheck(std::vector<string> args) {
 }
 
 
-void InvalidMode(std::vector<string> args, Connection con) {
+void InvalidMode(vector<string> args, Connection con) {
 	con.push("Invalid Mode: " + args[0]);
 }
 
 
-void Echo(std::vector<string> args, Connection con) {
+void Echo(vector<string> args, Connection con) {
 	con.push(args[1]);
 }
 
@@ -76,7 +76,7 @@ void Echo(std::vector<string> args, Connection con) {
 //------------------------------------------------
 
 
-void tokenize(string const& str, const char delim, std::vector<string>& argst) {
+void tokenize(string const& str, const char delim, vector<string>& argst) {
     size_t start;
     size_t end = 0;
 
@@ -88,9 +88,9 @@ void tokenize(string const& str, const char delim, std::vector<string>& argst) {
 }
 
 
-std::vector<string> split(string in_str, char delimiter) {
+vector<string> split(string in_str, char delimiter) {
 
-	std::vector<string> out;
+	vector<string> out;
 
     string between;
 	
@@ -140,11 +140,11 @@ bool file_exists(const string name) {
 //------------------------------------------------
 
 
-void Write(std::vector<string> args, Connection con) {
+void Write(vector<string> args, Connection con) {
 	
     string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
     if (file_exists(path) == true) {
-        std::remove(path.c_str());
+        remove(path.c_str());
     }
 
     ofstream File(path.c_str());
@@ -174,7 +174,7 @@ void Write(std::vector<string> args, Connection con) {
 }
 
 
-void NewGroup(std::vector<string> args, Connection con) {
+void NewGroup(vector<string> args, Connection con) {
 	
 	char conf[1024] = { 0 };
 	string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
@@ -195,11 +195,11 @@ void AddUser(string name) {
 }
 
 
-void DeleteGroup(std::vector<string> args, Connection con) {
+void DeleteGroup(vector<string> args, Connection con) {
 	string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 	if (file_exists(path))
 	{
-		std::remove(path.c_str());
+		remove(path.c_str());
 	}
 }
 
@@ -212,7 +212,7 @@ void DeleteGroup(std::vector<string> args, Connection con) {
 //------------------------------------------------
 
 
-void GetGroups(std::vector<string> args, Connection con) {
+void GetGroups(vector<string> args, Connection con) {
 	
 	string data = "";
 
@@ -222,7 +222,7 @@ void GetGroups(std::vector<string> args, Connection con) {
 
     for (auto& p : fs::directory_iterator(path.c_str()))
     {
-        std::vector<string> argst;
+        vector<string> argst;
 
         string data = p.path().filename();
 
@@ -241,7 +241,7 @@ void GetGroups(std::vector<string> args, Connection con) {
 }
 
 
-void Read(std::vector<string> args, Connection con) {
+void Read(vector<string> args, Connection con) {
 
     string data = "";
 
@@ -249,7 +249,7 @@ void Read(std::vector<string> args, Connection con) {
     string EndCode = "END";
     string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 
-    std::ifstream File(path);
+    ifstream File(path);
 
     if (!File) {
         con.push("END");
@@ -318,7 +318,7 @@ string Validate(string name, string token, Connection con, string auth_ip) {
 }
 
 
-void Forward(std::vector<string> args, Connection con, string auth_ip) {
+void Forward(vector<string> args, Connection con, string auth_ip) {
 	string proxy_command;
 	for (string part : args){
 		if (getIndex(args, part) != 0){
@@ -329,7 +329,7 @@ void Forward(std::vector<string> args, Connection con, string auth_ip) {
 }
 
 
-void IfValid(std::vector<string> args, Connection con, string auth_ip, void (*f)(std::vector<string>, Connection)) {
+void IfValid(vector<string> args, Connection con, string auth_ip, void (*f)(vector<string>, Connection)) {
 	
 	string returnCode = Validate(args[1], args[3], con, auth_ip);
 	
@@ -358,7 +358,7 @@ void IfValid(std::vector<string> args, Connection con, string auth_ip, void (*f)
 
 void ConLoop(Connection con, string auth_ip) {
         string input = con.recieve();
-        const std::vector<string> args = split(input, '/');
+        const vector<string> args = split(input, '/');
         const char mode = args[0][0];
 		con.java = JavaCheck(args);
 		
@@ -387,8 +387,8 @@ int main() {
 	
 	if (!file_exists("Server.config")){
 		cout << "No config detected, entering first time set-up" << endl;
-		cout << "Enter the ip address of the auth server you wish to use" << endl;
-		std::cin >> auth_ip;
+		cout << "Enter the ip address of the auth server you wish to use: ";
+		cin >> auth_ip;
 		cout << "Contacting Auth Server..." << endl;
 		bool valid = TestAuth(auth_ip);
 		if (valid){
@@ -407,8 +407,8 @@ int main() {
 	}
 	else {
 		string data = "";
-		std::ifstream File("Server.config");
-		std::vector<string> lines;
+		ifstream File("Server.config");
+		vector<string> lines;
 		while (getline(File, data))
 		{
 			if (data != "")
