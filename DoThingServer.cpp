@@ -174,14 +174,12 @@ void Write(vector<string> args, Connection con) {
 }
 
 
-void NewGroup(vector<string> args, Connection con) {
+void RenameGroup(vector<string> args, Connection con) {
 	
-	char conf[1024] = { 0 };
 	string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 	con.push("Same");
-	con.WaitUntilRecv();
-	string to_put(conf);
-	if (con.java == true){
+	string to_put = con.WaitUntilRecv();
+	if (con.java){
 		to_put.pop_back();
 	}
 	string newpath = "DoThingData/" + args[1] + "/" + to_put + ".csv";
@@ -364,14 +362,14 @@ void ConLoop(Connection con, string auth_ip) {
 		
 		
 		switch(mode){
-			case 'R': IfValid(args, con, auth_ip, Read); break;
-			case 'W': IfValid(args, con, auth_ip, Write); break;
+			case 'R': IfValid(args, con, auth_ip, Read); 		break;
+			case 'W': IfValid(args, con, auth_ip, Write); 		break;
 			case 'D': IfValid(args, con, auth_ip, DeleteGroup); break;
-			case 'G': IfValid(args, con, auth_ip, GetGroups); break;
-			case 'N': IfValid(args, con, auth_ip, NewGroup); break;
-			case 'A': Forward(args, con, auth_ip); break;
-			case 'T': Echo(args, con); break;
-			default : InvalidMode(args, con); break;
+			case 'G': IfValid(args, con, auth_ip, GetGroups); 	break;
+			case 'N': IfValid(args, con, auth_ip, RenameGroup); 	break;
+			case 'A': Forward(args, con, auth_ip); 				break;
+			case 'T': Echo(args, con); 							break;
+			default : InvalidMode(args, con); 					break;
 		}
 }
 
