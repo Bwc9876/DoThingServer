@@ -317,13 +317,21 @@ string Validate(string name, string token, Connection con, string auth_ip) {
 
 
 void Forward(vector<string> args, Connection con, string auth_ip) {
-	string proxy_command;
-	for (string part : args){
-		if (getIndex(args, part) != 0){
-			proxy_command += getIndex(args, part) == 1? part : "/" + part;
+	
+	if (args[0] != "V"){
+		string proxy_command;
+		for (string part : args){
+			if (getIndex(args, part) != 0){
+				proxy_command += getIndex(args, part) == 1? part : "/" + part;
+			}
 		}
+		Proxy(proxy_command, con, auth_ip);
 	}
-	Proxy(proxy_command, con, auth_ip);
+	else {
+		
+		con.push("Validate is for main server only!");
+		
+	}
 }
 
 
@@ -366,7 +374,7 @@ void ConLoop(Connection con, string auth_ip) {
 			case 'W': IfValid(args, con, auth_ip, Write); 		break;
 			case 'D': IfValid(args, con, auth_ip, DeleteGroup); break;
 			case 'G': IfValid(args, con, auth_ip, GetGroups); 	break;
-			case 'N': IfValid(args, con, auth_ip, RenameGroup); 	break;
+			case 'N': IfValid(args, con, auth_ip, RenameGroup); break;
 			case 'A': Forward(args, con, auth_ip); 				break;
 			case 'T': Echo(args, con); 							break;
 			default : InvalidMode(args, con); 					break;
