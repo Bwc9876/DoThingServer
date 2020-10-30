@@ -12,6 +12,14 @@
 #include <fstream>
 #include <string.h>
 #include <filesystem>
+#include <iostream>
+#include <iomanip>
+
+//Use these in encryption.h
+/* #include "cryptopp/modes.h"
+#include "cryptopp/aes.h"
+#include "cryptopp/filters.h" */
+
 #include "Connection.h"
 
 

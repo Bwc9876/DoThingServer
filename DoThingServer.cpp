@@ -77,6 +77,7 @@ void Echo(vector<string> args, Connection con) {
 
 
 void tokenize(string const& str, const char delim, vector<string>& argst) {
+	
     size_t start;
     size_t end = 0;
 
@@ -143,32 +144,28 @@ bool file_exists(const string name) {
 void Write(vector<string> args, Connection con) {
 	
     string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
-    if (file_exists(path) == true) {
+    if (file_exists(path)) {
         remove(path.c_str());
     }
 
     ofstream File(path.c_str());
     string look = "END";
+	string data;
 
-    while (true) 
+    while (data.find(look) != string::npos) 
 	{
-        string data = con.WaitUntilRecv();
-        if (data.find(look) != string::npos) 
+        data = con.WaitUntilRecv();
+		
+		if (con.java)
 		{
-            break;
-        }
-        else 
+			File << data;
+		}
+		else
 		{
-			if (con.java)
-			{
-				File << data;
-			}
-			else
-			{
-				File << data << endl;
-			}
-            con.push("GO");
-        }
+			File << data << endl;
+		}
+		
+        con.push("GO");
     }
     File.close();
 }
@@ -179,26 +176,30 @@ void RenameGroup(vector<string> args, Connection con) {
 	string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
 	con.push("Same");
 	string to_put = con.WaitUntilRecv();
-	if (con.java){
-		to_put.pop_back();
-	}
+	if (con.java) to_put.pop_back();
 	string newpath = "DoThingData/" + args[1] + "/" + to_put + ".csv";
 	rename(path.c_str(), newpath.c_str());
+	
 }
 
 
 void AddUser(string name) {
+	
     string path = "DoThingData/" + name;
     fs::create_directory(path);
+	
 }
 
 
 void DeleteGroup(vector<string> args, Connection con) {
+	
 	string path = "DoThingData/" + args[1] + "/" + args[2] + ".csv";
-	if (file_exists(path))
-	{
+	if (file_exists(path)){
+		
 		remove(path.c_str());
+		
 	}
+	
 }
 
 
@@ -212,30 +213,22 @@ void DeleteGroup(vector<string> args, Connection con) {
 
 void GetGroups(vector<string> args, Connection con) {
 	
-	string data = "";
-
-    string EndCode = "END";
-	
     string path = "DoThingData/" + args[1] + "/";
 
     for (auto& p : fs::directory_iterator(path.c_str()))
     {
-        vector<string> argst;
-
         string data = p.path().filename();
 
         string delimeter = ".";
 
         data = data.substr(0, data.find(delimeter));
 
-        char tm[1024] = { 0 };
-
         con.push(data);
 
         con.WaitUntilRecv();
     }
 
-    con.push(EndCode);
+    con.push("END");
 }
 
 
@@ -290,15 +283,25 @@ void Proxy(string command, Connection con, string auth_ip) {
 
 bool TestAuth(string ip) {
 	
-	Connection AuthCon(8081, ip);
+	try{
 	
-	AuthCon.push("T/Hello");
+		Connection AuthCon(8081, ip);
+		
+		AuthCon.push("T/Hello");
 	
-	string result = AuthCon.WaitUntilRecv();
+		string result = AuthCon.WaitUntilRecv();
+		
+		AuthCon.dc();
+		
+		return result == "Hello";
 	
-	AuthCon.dc();
+	}
+	catch (const char* ConError) {
+		
+		return false;
+		
+	}
 	
-	return result == "Hello";
 }
 
 
@@ -429,7 +432,7 @@ int main() {
 		}
 		auth_ip = lines[0];
 		if (!TestAuth(auth_ip)){
-			cout << "Error, the auth server did not respond on start (start the auth server first!)";
+			cout << "Error, the auth server did not respond on start (start the auth server first!)" << endl;
 			return 0;
 		}
 	}

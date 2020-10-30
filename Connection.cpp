@@ -78,7 +78,7 @@ using namespace std;
 		
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		{
-			cout << "Error Connecting" << endl;
+			throw "Connection Error";
 		}
 
 		serv_addr.sin_family = AF_INET;
@@ -86,12 +86,12 @@ using namespace std;
 
 		if (inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0)
 		{
-			cout << "Error Connecting" << endl;
+			throw "Connection Error";
 		}
 
 		if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
 		{
-			cout << "Error Connecting" << endl;
+			throw "Connection Error";
 		}
 		
 	}	
